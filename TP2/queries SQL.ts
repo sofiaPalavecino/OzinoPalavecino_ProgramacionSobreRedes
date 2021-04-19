@@ -1,8 +1,7 @@
-var dataModels = {
 //1
 //titulo es parametro en la funcion que selecciona esta query
 getProductoByTitulo: (callback)=> {
-    var valores = [titulo+"%", used, orden];
+    var valores = ["%"+titulo+"%", used, orden];
     connection.query({
         sql: "SELECT * FROM productos LEFT JOIN compras ON compras.id_producto = productos.id_producto WHERE 'nombre' LIKE ? AND usado = ?? ORDER BY ???",
         tiemout: 40000,
@@ -98,14 +97,39 @@ getCalificaciones: (callback)=> {
 //8
 postCalificaciones: (callback)=> {
     if (connection){
-        var valores = [id_calificante, id_operacion];
+        var idOP = id_operacion;
+        var valores = [id_usuario, id_calificante, calificacion];
         connection.query({
-            sql: "SELECT ",
+            sql: "SELECT productos.vendedor, comprador_calificado, vendedor_calificado FROM compras LEFT JOIN productos ON compras.id_producto = productos.id WHERE compras.id = ?",
             tiemout: 40000,
-            values: valores
-        }, function (error,results, fields){
-            if(error) throw error
-            callback(fields)}
-        );
+            values: idOP
+        }, function (error,results,fields){
+            if(error) throw error;
+            if(results == id_usuario && results[2] == false){
+                //comprador calificando vendedor
+                connection.query({
+                    sql: "INSERT INTO calificaciones_vendedores (id_vendedor, id_comprador, calificacion, fecha) values (?, ??, ???, CURDATE)",
+                    tiemout: 40000,
+                    values: valores
+                }, function (error,results, fields){
+                    if(error) throw error
+                    callback(fields)}
+                );
+            }
+            else if (results[1] == false){
+                //vendedor calificando comprador
+                connection.query({
+                    sql: "INSERT INTO calificaciones_compradores (id_comprador, id_vendedor, calificacion, fecha) values (?, ??, ???, CURDATE)",
+                    tiemout: 40000,
+                    values: valores
+                }, function (error,results,fields){
+                    if(error) throw error
+                    callback(fields)}
+                );
+            }
+            else{
+                
+            }
+        });
     }
 }
