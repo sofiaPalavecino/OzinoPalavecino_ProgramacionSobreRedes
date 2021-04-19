@@ -8,6 +8,7 @@ getProductoByTitulo: (callback)=> {
         values: valores
     }, function (error,results, fields){
         if(error) throw error
+        res.json(results)
         callback(fields)});
 }
 //2
@@ -20,6 +21,7 @@ getFavoritos: (callback)=> {
             values: valores
         }, function (error,results, fields){
             if(error) throw error
+            res.json(results)
             callback(fields)});
     }
 }
@@ -34,6 +36,7 @@ postFavorito: (callback)=> {
             values: valores
         }, function (error,results, fields){
             if(error) throw error
+            res.json(results)
             callback(fields)});
     }
 }
@@ -48,6 +51,7 @@ deleteFavorito: (callback)=> {
             values: valores
         }, function (error,results, fields){
             if(error) throw error
+            res.json(results)
             callback(fields)});
     }
 }
@@ -62,6 +66,7 @@ getCompra: (callback)=> {
             values: valores
         }, function (error,results, fields){
             if(error) throw error
+            res.json(results)
             callback(fields)});
     }
 }
@@ -76,6 +81,7 @@ postCompra: (callback)=> {
             values: valores
         }, function (error,results, fields){
             if(error) throw error
+            res.json(results)
             callback(fields)});
     }
 }
@@ -90,6 +96,7 @@ getCalificaciones: (callback)=> {
             values: valores
         }, function (error,results, fields){
             if(error) throw error
+            res.json(results)
             callback(fields)}
         );
     }
@@ -113,6 +120,7 @@ postCalificaciones: (callback)=> {
                     values: valores
                 }, function (error,results, fields){
                     if(error) throw error
+                    res.json(results)
                     callback(fields)}
                 );
             }
@@ -122,13 +130,14 @@ postCalificaciones: (callback)=> {
                     sql: "INSERT INTO calificaciones_compradores (id_comprador, id_vendedor, calificacion, fecha) values (?, ??, ???, CURDATE)",
                     tiemout: 40000,
                     values: valores
-                }, function (error,results,fields){
+                }, function (error,results2,fields){
                     if(error) throw error
+                    res.json(results)
                     callback(fields)}
                 );
             }
-            else{
-                
+            else if(results[1] || results[2]){
+                res.json({"Resultado": "El usuario ya estaba calificado"})
             }
         });
     }
