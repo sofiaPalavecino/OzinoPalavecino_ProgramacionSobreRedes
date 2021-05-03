@@ -18,7 +18,7 @@ const pool = mysql.createPool({
 if(cluster.isWorker){
     //atender a requests
     //funciones
-    process.on('message', (funcion) =>{
+    process.on('funciones', () =>{
         pool.getConnection(function(err, con){
             con.beginTransaction(function(err){
                 if(err) throw err;
@@ -44,7 +44,7 @@ if(cluster.isWorker){
         });
     });
     //reservar
-    process.on('message',(reserva)=>{
+    process.on('reserva',(id_usuario, butacas, id_funcion)=>{
         if(){
             pool.getConnection(function(err, con){
                 con.beginTransaction(function(err){
@@ -66,7 +66,7 @@ if(cluster.isWorker){
         }
     });
     //cancelar reserva
-    process.on('message',(cancelar) =>{
+    process.on('cancelar',(cancelar) =>{
 
     });
 }
@@ -81,7 +81,7 @@ else{
     //para ver todas las funciones
     app.get('/funciones',(req: express.Request, res: express.Response) => {
         const worker = cluster.fork();
-        worker.on('message', (result) =>{
+        worker.on('funciones', (result) =>{
             res.status(200).send(result);
         });
     });
@@ -92,7 +92,7 @@ else{
         var id_funcion:number = req.params.id_funcion
         const worker = cluster.fork();
         worker.send(id_usuario,butacas,id_funcion);
-        worker.on('message', (result) => {
+        worker.on('reserva', (result) => {
             res.status(200).send(result);
         });
     });
@@ -100,7 +100,7 @@ else{
     app.post('/cancelar_reserva', (req: express.Request, res: express.Response) => {
         const worker = cluster.fork();
         worker.send(req.body.cancelar);
-        worker.on('message', (result) => {
+        worker.on('cancelar', (result) => {
             res.status(200).send(result);
         });
     });
