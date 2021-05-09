@@ -18,11 +18,13 @@ const pool = mysql.createPool({
 if(cluster.isWorker){
     //atender a requests
     //funciones
-    process.on('funciones', () =>{
+    process.on('funciones', message =>{
+        console.log("uu")
         pool.getConnection(function(err, con){
             con.beginTransaction(function(err){
                 if(err) throw err;
-                con.query("SELECT * FROM funciones WHERE CURDATE() < fecha AND butacas_disponibles LIKE '%[]%'",function(err,results,fields){
+                con.query("SELECT * FROM funciones WHERE CURDATE() > fecha and butacas_disponibles not LIKE '[]';",function(err,results,fields){
+                    
                     if (err) {
                         return con.rollback(function() {
                             throw err;
@@ -32,6 +34,11 @@ if(cluster.isWorker){
                         if (err) {
                             return con.rollback(function() {
                                 throw err;
+                            });
+                        }
+                        if(results=''){
+                            return con.rollback(function() {
+                                console.log("no hay funciones disponibles");
                             });
                         }
                         con.release();
@@ -44,7 +51,7 @@ if(cluster.isWorker){
         });
     });
     //reservar
-    process.on('reserva',(id_usuario, butacas, id_funcion)=>{
+   /* process.on('reserva',(id_usuario, butacas, id_funcion)=>{
         if(){
             pool.getConnection(function(err, con){
                 con.beginTransaction(function(err){
@@ -64,7 +71,7 @@ if(cluster.isWorker){
             process.send(null);
             process.kill(process.pid);
         }
-    });
+    });*/
     //cancelar reserva
     process.on('cancelar',(cancelar) =>{
 
@@ -72,16 +79,20 @@ if(cluster.isWorker){
 }
 else{
     //crear el fork, el server y las requests
-    const app: express.Application = express();
+    const app = require('express')();
     const server: http.Server = http.createServer(app);
     const port: Number = 3000;
 
     app.use(bodyparser.json());
     app.use(bodyparser.urlencoded({ extended: true }));
+    console.log("aaa")
     //para ver todas las funciones
     app.get('/funciones',(req: express.Request, res: express.Response) => {
+        console.log("ee")
         const worker = cluster.fork();
+        
         worker.on('funciones', (result) =>{
+            console.log("ii")
             res.status(200).send(result);
         });
     });
