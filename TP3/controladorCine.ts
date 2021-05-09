@@ -51,16 +51,50 @@ if(cluster.isWorker){
         });
     });
     //reservar
-   /* process.on('reserva',(id_usuario, butacas, id_funcion)=>{
+    //
+    process.on('reserva',(id_usuario, butacas, id_funcion)=>{
         if(){
             pool.getConnection(function(err, con){
                 con.beginTransaction(function(err){
                     if(err) throw err;
-                    con.query("SELECT * FROM reservas WHERE "+id_usuario+" = id_usuario AND "+id_funcion+" = id_funcion", function(err,results,fields){
+                    
+                    con.query("SELECT * FROM funciones WHERE "+id_funcion+"=id and CURDATE() < fecha and butacas_disponibles LIKE '[]';", function(err,results,fields){
                         if (err) {
                             return con.rollback(function() {
                                 throw err;
                             });
+                        }
+                        if(results!=""){
+                            con.query("SELECT * FROM reservas WHERE "+id_usuario+" = id_usuario AND "+id_funcion+" = id_funcion;", function(err,results,fields){
+                                if(err){
+                                    return con.rollback(function(){
+                                        throw err;
+                                    });
+                                }
+                                if(results!=""){
+                                    con.query("insert into funciones (usuario,funcion, butacas_reservadas) values ("+id_usuario+","+id_funcion+","+butacas+")",function(err,results,fields){
+                                        if(err){
+                                            return con.rollback(function(){
+                                                throw err;
+                                            })
+                                        }
+                                        con.release();
+                                        console.log("Reserva generada");
+                                        process.send(results);
+                                        process.kill(process.pid);
+                                    })
+                                }
+                                else{
+                                    console.log("El usuario ya hizo una reserva en esta función");
+                                    process.send(results);
+                                    process.kill(process.pid); 
+                                }
+                            })
+                        }
+                        else{
+                            console.log("Esta función no está disponible");
+                            process.send(results);
+                            process.kill(process.pid); 
                         }
                     });
                 });
@@ -71,7 +105,7 @@ if(cluster.isWorker){
             process.send(null);
             process.kill(process.pid);
         }
-    });*/
+    });
     //cancelar reserva
     process.on('cancelar',(cancelar) =>{
 
