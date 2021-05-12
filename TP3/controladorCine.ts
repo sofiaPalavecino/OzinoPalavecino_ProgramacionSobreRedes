@@ -53,7 +53,7 @@ if(cluster.isWorker){
     //reservar
     //
     process.on('reserva',(id_usuario, butacas, id_funcion)=>{
-        if(){
+        if(butacas){
             pool.getConnection(function(err, con){
                 con.beginTransaction(function(err){
                     if(err) throw err;
@@ -76,20 +76,20 @@ if(cluster.isWorker){
                                         if(err){
                                             return con.rollback(function(){
                                                 throw err;
-                                            })
+                                            });
                                         }
                                         con.release();
                                         console.log("Reserva generada");
                                         process.send(results);
                                         process.kill(process.pid);
-                                    })
+                                    });
                                 }
                                 else{
                                     console.log("El usuario ya hizo una reserva en esta función");
                                     process.send(results);
                                     process.kill(process.pid); 
                                 }
-                            })
+                            });
                         }
                         else{
                             console.log("Esta función no está disponible");
@@ -108,7 +108,11 @@ if(cluster.isWorker){
     });
     //cancelar reserva
     process.on('cancelar',(cancelar) =>{
-
+        pool.getConnection(function(err,con){
+            con.beginTransaction(function (err){
+                if(err) throw err;
+            });
+        });
     });
 }
 else{
@@ -144,7 +148,9 @@ else{
     //para cancelar la reserva
     app.post('/cancelar_reserva', (req: express.Request, res: express.Response) => {
         const worker = cluster.fork();
-        worker.send(req.body.cancelar);
+        var id_funcion:number = req.params.id_funcion
+        var id_usuario:number = req.body.cancelar
+        worker.send(id_funcion,id_usuario);
         worker.on('cancelar', (result) => {
             res.status(200).send(result);
         });
