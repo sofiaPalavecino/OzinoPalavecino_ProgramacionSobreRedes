@@ -1,0 +1,6 @@
+FROM node:9-slim
+WORKDIR /controlador
+COPY package.json /controlador
+RUN npm install
+COPY . /controlador
+CMD ["npm","start"]
