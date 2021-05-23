@@ -11,107 +11,99 @@ const pool = mysql.createPool({
     connectionLimit: 10,
     host: "localhost",
     user: "root",
-    password: "root",
+    password: "password",
     database: "Cine"
 });
 
 if(cluster.isWorker){
     //atender a requests
-    //funciones
-    process.on('funciones', message =>{
-        console.log("uu")
+    //reservar
+    //
+    
+    process.on('reservar',(id_usuario, butacas, id_funcion)=>{
         pool.getConnection(function(err, con){
+            if(err) throw err;
             con.beginTransaction(function(err){
-                if(err) throw err;
-                con.query("SELECT * FROM funciones WHERE CURDATE() > fecha and butacas_disponibles not LIKE '[]';",function(err,results,fields){
-                    
+                if(err) throw err;  
+                con.query("SELECT * FROM reservas WHERE ? = id_usuario AND ? = id_funcion;",[id_usuario,id_funcion], function(err,results,fields){
                     if (err) {
                         return con.rollback(function() {
                             throw err;
                         });
                     }
-                    con.commit(function(err){
-                        if (err) {
-                            return con.rollback(function() {
+                    if(results!=""){
+                        con.query("select butacas_disponibles from funciones where id= ? and curdate()<fecha and butacas_disponibles not like '[]'",[id_funcion],function (err,results,fields){
+                            if(err) return con.rollback(function(){
                                 throw err;
                             });
-                        }
-                        if(results=''){
-                            return con.rollback(function() {
-                                console.log("no hay funciones disponibles");
-                            });
-                        }
-                        con.release();
-                        console.log(`Funciones obtenidas`);
-                        process.send(results);
+                            if(results!="[]"){
+                                //verificacion que las butacas que seleccionó el usuario estén incluidas en las disponibles
+                                if(true){
+                                    con.query("insert into reservas (usuario,funcion,butacas) values (?,?,?)",[id_usuario,id_funcion,butacas],function (err,results,fields){
+                                        if(err) return con.rollback(function(){
+                                            throw err;
+                                        });
+                                        con.release();
+                                        process.send("Reserva generada con éxito");
+                                        process.kill(process.pid);
+                                    })
+                                }
+                                else{
+                                    con.release();
+                                    process.send("las butacas elegidas no están disponibles");
+                                    process.kill(process.pid);  
+                                }
+                            }
+                            else{
+                                con.release();
+                                process.send("no quedan butacas disponibles en esta función");
+                                process.kill(process.pid);
+                            }
+                        })
+                    }
+                    else{
+                        con.release()
+                        process.send("El usuario ya ha hecho una reserva de esta función");
                         process.kill(process.pid);
-                    });
+                    }
                 });
             });
         });
     });
-    //reservar
-    //
-    process.on('reserva',(id_usuario, butacas, id_funcion)=>{
-        if(butacas){
-            pool.getConnection(function(err, con){
-                con.beginTransaction(function(err){
-                    if(err) throw err;
-                    
-                    con.query("SELECT * FROM funciones WHERE "+id_funcion+"=id and CURDATE() < fecha and butacas_disponibles LIKE '[]';", function(err,results,fields){
-                        if (err) {
-                            return con.rollback(function() {
-                                throw err;
-                            });
-                        }
-                        if(results!=""){
-                            con.query("SELECT * FROM reservas WHERE "+id_usuario+" = id_usuario AND "+id_funcion+" = id_funcion;", function(err,results,fields){
-                                if(err){
-                                    return con.rollback(function(){
-                                        throw err;
-                                    });
-                                }
-                                if(results!=""){
-                                    con.query("insert into funciones (usuario,funcion, butacas_reservadas) values ("+id_usuario+","+id_funcion+","+butacas+")",function(err,results,fields){
-                                        if(err){
-                                            return con.rollback(function(){
-                                                throw err;
-                                            });
-                                        }
-                                        con.release();
-                                        console.log("Reserva generada");
-                                        process.send(results);
-                                        process.kill(process.pid);
-                                    });
-                                }
-                                else{
-                                    console.log("El usuario ya hizo una reserva en esta función");
-                                    process.send(results);
-                                    process.kill(process.pid); 
-                                }
-                            });
-                        }
-                        else{
-                            console.log("Esta función no está disponible");
-                            process.send(results);
-                            process.kill(process.pid); 
-                        }
-                    });
+
+    //cancelar reserva
+    process.on('cancelar',(id_funcion,id_usuario) =>{
+        pool.getConnection(function(err,con){
+            con.beginTransaction(function(err){
+                if(err) throw err;
+                con.query("select * from reservas where "+id_funcion+" = funcion and "+id_usuario+" = usuario;", function (err,results,fields){
+                    if (err) {
+                        return con.rollback(function() {
+                            throw err;
+                        });
+                    }
+                    if(results!=""){
+                        con.query("delete from reservas where "+id_funcion+" = funcion and "+id_usuario+" = usuario;", function (err,results,fields){
+                            if (err) {
+                                return con.rollback(function() {
+                                    throw err;
+                                });
+                            }
+                            else{
+                                console.log(`La reserva ha sido eliminada`);
+                                process.send(null);
+                                process.kill(process.pid);
+                            }
+                        });
+                    }
+                    else{
+                        con.release();
+                        process.send("no existen reservas a nombre de este usuario");
+                        process.kill(process.pid);
+                    }
                 });
             });
-        }
-        else{
-            console.log(`No puede reservar mas de 6 butacas`);
-            process.send(null);
-            process.kill(process.pid);
-        }
-    });
-    //cancelar reserva
-    process.on('cancelar',(cancelar) =>{
-        pool.getConnection(function(err,con){
-            con.beginTransaction(function (err){
-                if(err) throw err;
-            });
+            
         });
     });
 }
@@ -121,27 +113,39 @@ else{
     const server: http.Server = http.createServer(app);
     const port: Number = 3000;
 
+    console.log("Api de cine");
+
     app.use(bodyparser.json());
     app.use(bodyparser.urlencoded({ extended: true }));
-    console.log("aaa")
+    
     //para ver todas las funciones
     app.get('/funciones',(req: express.Request, res: express.Response) => {
-        console.log("ee")
-        const worker = cluster.fork();
-        
-        worker.on('funciones', (result) =>{
-            console.log("ii")
-            res.status(200).send(result);
+        pool.getConnection(function(err, con){
+            con.beginTransaction(function(err){
+                if(err) throw err;
+                con.query("SELECT * FROM funciones WHERE CURDATE() < fecha and butacas_disponibles not LIKE '[]';",function(err,results,fields){
+                    
+                    if (err) throw err;
+                    if(results==''){
+                        res.json("no hay funciones disponibles");
+                    }
+                    console.log(`Funciones obtenidas`);
+                    res.json(results);    
+                });
+            });
         });
     });
     //para reservar
     app.post('/reservar/:id_funcion', (req: express.Request, res: express.Response) => {
-        var id_usuario:number = req.body.id_usuario
-        var butacas:JSON = req.body.butacas
+        console.log("ee");
         var id_funcion:number = req.params.id_funcion
+        var id_usuario:number = req.body.id_usuario
+        var butacas:string = req.body.butacas
+        
+        console.log(butacas);
         const worker = cluster.fork();
         worker.send(id_usuario,butacas,id_funcion);
-        worker.on('reserva', (result) => {
+        worker.on('reservar', (result) => {
             res.status(200).send(result);
         });
     });
@@ -155,6 +159,8 @@ else{
             res.status(200).send(result);
         });
     });
+
+    
 
     server.listen(port);
 }
