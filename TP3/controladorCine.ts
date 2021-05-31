@@ -3,7 +3,6 @@ import * as http from 'http';
 import * as bodyparser from 'body-parser';    
 import { isBuffer } from 'node:util';
 import { request } from 'node:http';
-
 const cluster = require('cluster');
 
 const mysql = require('mysql');
@@ -20,7 +19,7 @@ if(cluster.isWorker){
     //reservar
     //
     
-    process.on('reservar',(id_usuario, butacas, id_funcion)=>{
+    process.on('reservar',(id_usuario, butacasA, id_funcion)=>{
         pool.getConnection(function(err, con){
             if(err) throw err;
             con.beginTransaction(function(err){
@@ -140,14 +139,32 @@ else{
         console.log("ee");
         var id_funcion:number = req.params.id_funcion
         var id_usuario:number = req.body.id_usuario
-        var butacas:string = req.body.butacas
-        
-        console.log(butacas);
-        const worker = cluster.fork();
-        worker.send(id_usuario,butacas,id_funcion);
-        worker.on('reservar', (result) => {
-            res.status(200).send(result);
-        });
+        var butacas:String = req.body.butacas
+        var cantButacas:number = 0;
+        var butacasA:Array<String>=[];
+        for(var i = 0; i<=butacas.length;i++){
+            if(butacas.charCodeAt(i) > 48 && butacas.charCodeAt(i) <= 57){
+                if(butacas.charCodeAt(i+1)> 48 && butacas.charCodeAt(i+1) <= 57){
+                    butacasA.push(butacas[i-1]+butacas[i]+butacas[i+1]);
+                    i++;
+                }
+                else{
+                    butacasA.push(butacas[i-1]+butacas[i]);
+                }
+                cantButacas++;
+                
+            }
+        }
+        if(cantButacas>6){
+            res.send("butacas de más");
+        }
+        else{
+            const worker = cluster.fork();
+            worker.send(id_usuario,butacasA,id_funcion);
+            worker.on('reservar', (result) => {
+                res.status(200).send(result);
+            });
+        }
     });
     //para cancelar la reserva
     app.post('/cancelar_reserva', (req: express.Request, res: express.Response) => {
