@@ -126,6 +126,7 @@ if(cluster.isWorker){
                     
                     if (err) throw err;
                     var butacasDisponibles:Array<String>=obtenerButacas(results[0].butacas_disponibles);
+                    //si ya no quedaban butacas disponibles
                     if(butacasDisponibles.length==0){
                         con.query("update funciones set butacas_disponibles=? and vigente=1 where id=?;",[butacasReservadas,funcion],function (err,results,fields) {
                             if (err) throw err;
