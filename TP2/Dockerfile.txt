@@ -1,0 +1,6 @@
+FROM node:9-slim
+WORKDIR /TP2
+COPY package.json /TP2
+RUN npm install
+COPY . /TP2
+CMD ["npm","start"]
