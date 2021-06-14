@@ -1,5 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { SalaComponent } from "./sala/sala.component";
+import { ButacaComponent } from "./butaca/butaca.component";
 
 const routes: Routes = [];
 
