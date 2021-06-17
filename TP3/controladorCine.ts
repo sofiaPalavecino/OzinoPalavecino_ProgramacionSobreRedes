@@ -166,7 +166,7 @@ else{
         pool.getConnection(function(err, con){
             con.beginTransaction(function(err){
                 if(err) throw err;
-                con.query("SELECT * FROM funciones WHERE CURDATE() < fecha and butacas_disponibles not LIKE '[]';",function(err,results,fields){
+                con.query("SELECT * FROM funciones WHERE CURDATE() < fecha and butacas_disponibles not LIKE '[]' and fecha > NOW();",function(err,results,fields){
                     
                     if (err) throw err;
                     if(results==''){
