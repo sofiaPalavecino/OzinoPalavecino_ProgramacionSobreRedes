@@ -9,7 +9,7 @@ export class ListadoComponent implements OnInit {
   
 
   constructor() { }
-  peliculas=["assets/images/space.png","assets/images/emoji.png"]
+  peliculas=["assets/images/space.jpeg","assets/images/emoji.jpg"]
 
   ngOnInit(): void {
   }
