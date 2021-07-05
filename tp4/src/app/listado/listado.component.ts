@@ -6,8 +6,10 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./listado.component.scss']
 })
 export class ListadoComponent implements OnInit {
+  
 
   constructor() { }
+  peliculas=["assets/images/space.jpeg","assets/images/emoji.jpg"]
 
   ngOnInit(): void {
   }
