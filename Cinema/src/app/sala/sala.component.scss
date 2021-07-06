@@ -182,11 +182,15 @@ body {
       }
     }
 
-    .pantalla{
-        height: 50%;
-        width: 30%;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%);
-    }
+    
   }
+  .pantalla{
+    position: absolute;
+    height: 30%;
+    width: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -120%);
+    
+
+}

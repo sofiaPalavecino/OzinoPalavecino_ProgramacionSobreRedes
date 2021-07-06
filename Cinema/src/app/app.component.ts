@@ -12,9 +12,13 @@ export class AppComponent {
 
   title = 'Cinema';
 
+  ngOnInit(): void {
+    this.cargarData();
+  }
+
   public cargarData(){
     this.RestService.get('http://localhost:3000/funciones').subscribe(respuesta =>{
       console.log(respuesta);
-    })
+    });
   }
 }
