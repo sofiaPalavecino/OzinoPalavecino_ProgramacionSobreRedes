@@ -1,17 +1,16 @@
 "use strict";
 exports.__esModule = true;
 var http = require("http");
-var bodyparser = require("body-parser");
+//import * as bodyparser from 'body-parser';    
 /*import { isBuffer } from 'node:util';
 import { request } from 'node:http';*/
 var cluster = require('cluster');
 var mysql = require('mysql');
 var pool = mysql.createPool({
-    connectionLimit: 10,
     host: "localhost",
     user: "root",
-    password: "password",
-    database: "Cine"
+    password: "",
+    database: "cine"
 });
 function obtenerButacas(butacas) {
     var arrayButacas = [];
@@ -157,6 +156,7 @@ else {
     var app = require('express')();
     var server = http.createServer(app);
     var port = 3000;
+    var bodyparser = require('body-parser');
     console.log("Api de cine");
     app.use(bodyparser.json());
     app.use(bodyparser.urlencoded({ extended: true }));
@@ -173,6 +173,96 @@ else {
                         res.json("no hay funciones disponibles");
                     }
                     console.log("Funciones obtenidas");
+                    res.json(results);
+                });
+            });
+        });
+    });
+    app.get('/funcion/:id_funcion', function (req, res) {
+        var id_funcion = req.params.id_funcion;
+        pool.getConnection(function (err, con) {
+            con.beginTransaction(function (err) {
+                if (err)
+                    throw err;
+                con.query("SELECT * FROM funciones WHERE id=?;", [id_funcion], function (err, results, fields) {
+                    if (err)
+                        throw err;
+                    if (results == '') {
+                        res.json("no hay funciones disponibles");
+                    }
+                    console.log("Funciones obtenidas");
+                    res.json(results);
+                });
+            });
+        });
+    });
+    app.get('/funcionesolmedo', function (req, res) {
+        pool.getConnection(function (err, con) {
+            con.beginTransaction(function (err) {
+                if (err)
+                    throw err;
+                con.query("SELECT * FROM funciones WHERE CURDATE() < fecha and butacas_disponibles not LIKE '[]' and fecha > NOW() and tipo='porcel';", function (err, results, fields) {
+                    if (err)
+                        throw err;
+                    if (results == '') {
+                        res.json("no hay funciones disponibles");
+                    }
+                    console.log("Funciones obtenidas");
+                    res.json(results);
+                });
+            });
+        });
+    });
+    app.get('/funcionesbanieros', function (req, res) {
+        pool.getConnection(function (err, con) {
+            con.beginTransaction(function (err) {
+                if (err)
+                    throw err;
+                con.query("SELECT * FROM funciones WHERE CURDATE() < fecha and butacas_disponibles not LIKE '[]' and fecha > NOW() and tipo='banieros';", function (err, results, fields) {
+                    if (err)
+                        throw err;
+                    if (results == '') {
+                        res.json("no hay funciones disponibles");
+                    }
+                    console.log("Funciones obtenidas");
+                    res.json(results);
+                });
+            });
+        });
+    });
+    app.get('/ingresar/:username', function (req, res) {
+        var username = req.params.username;
+        pool.getConnection(function (err, con) {
+            con.beginTransaction(function (err) {
+                if (err)
+                    throw err;
+                con.query("SELECT * FROM usuarios WHERE username = ?;", [username], function (err, results, fields) {
+                    if (err)
+                        throw err;
+                    if (results == '') {
+                        res.json("No hay usuarios registrados con ese username");
+                    }
+                    else {
+                        console.log("Usuario obtenido");
+                        res.json(results);
+                    }
+                });
+            });
+        });
+    });
+    app.get('/reservas/:id_usuario', function (req, res) {
+        var id_usuario = req.params.id_usuario;
+        pool.getConnection(function (err, con) {
+            con.beginTransaction(function (err) {
+                if (err)
+                    throw err;
+                con.query("SELECT * FROM reservas WHERE usuario = ?;", [id_usuario], function (err, results, fields) {
+                    if (err)
+                        throw err;
+                    if (results == '') {
+                        res.json("No hay reservas generadas por este usuario");
+                    }
+                    console.log("Reservas obtenidas");
                     res.json(results);
                 });
             });
@@ -238,20 +328,19 @@ else {
             res.status(200).send(result);
         });
     });
-    var CronJob = require('cron').CronJob;
-    //cuando la película está a cinco minutos de iniciar se pasa su estado a no vigente
-    var job = new CronJob('*/5 * * * *', function () {
-        pool.getConnection(function (err, con) {
-            con.beginTransaction(function (err) {
-                if (err)
-                    throw err;
-                con.query("update funciones set vigente=0 where vigente = 1 and fecha between NOW() and DATE_ADD(NOW(), INTERVAL 5 MINUTE);", function (err, results, fields) {
-                    if (err)
-                        throw err;
-                });
+    //var CronJob = require('cron').CronJob;
+    //var job = new CronJob('*/5 * * * *', function() {
+    /*pool.getConnection(function(err, con){
+        con.beginTransaction(function(err){
+            if(err) throw err;
+            con.query("update funciones set vigente=0 where vigente = 1 and fecha between NOW() and DATE_ADD(NOW(), INTERVAL 5 MINUTE);",function(err,results,fields){
+                
+                if (err) throw err;
+                  
             });
         });
-    }, null, true, 'America/Los_Angeles');
-    job.start();
+    });
+}, null, true, 'America/Los_Angeles');
+job.start();*/
     server.listen(port);
 }

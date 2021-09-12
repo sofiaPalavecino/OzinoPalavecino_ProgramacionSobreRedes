@@ -1,17 +1,16 @@
 import express, { json } from 'express';
 import * as http from 'http';
-import * as bodyparser from 'body-parser';    
+//import * as bodyparser from 'body-parser';    
 /*import { isBuffer } from 'node:util';
 import { request } from 'node:http';*/
 const cluster = require('cluster');
 
 const mysql = require('mysql');
 const pool = mysql.createPool({
-    connectionLimit: 10,
     host: "localhost",
     user: "root",
-    password: "password",
-    database: "Cine"
+    password: "",
+    database: "cine"
 });
 
 function obtenerButacas(butacas):Array<String>{
@@ -155,6 +154,7 @@ else{
     const app = require('express')();
     const server: http.Server = http.createServer(app);
     const port: Number = 3000;
+    var bodyparser = require('body-parser');
 
     console.log("Api de cine");
 
@@ -162,8 +162,8 @@ else{
     app.use(bodyparser.urlencoded({ extended: true }));
     
     //para ver todas las funciones
-    app.get('/funciones',(req: express.Request, res: express.Response) => {
-        pool.getConnection(function(err, con){
+    app.get('/funciones',(req, res) => {
+        pool.getConnection(function(err, con:any){
             con.beginTransaction(function(err){
                 if(err) throw err;
                 con.query("SELECT * FROM funciones WHERE CURDATE() < fecha and butacas_disponibles not LIKE '[]' and fecha > NOW();",function(err,results,fields){
@@ -178,8 +178,94 @@ else{
             });
         });
     });
+    app.get('/funcion/:id_funcion',(req, res) => {
+        var id_funcion:number=req.params.id_funcion;
+        pool.getConnection(function(err, con:any){
+            con.beginTransaction(function(err){
+                if(err) throw err;
+                con.query("SELECT * FROM funciones WHERE id=?;",[id_funcion],function(err,results,fields){
+                    
+                    if (err) throw err;
+                    if(results==''){
+                        res.json("no hay funciones disponibles");
+                    }
+                    console.log(`Funciones obtenidas`);
+                    res.json(results);    
+                });
+            });
+        });
+    });
+    app.get('/funcionesolmedo',(req, res) => {
+        pool.getConnection(function(err, con:any){
+            con.beginTransaction(function(err){
+                if(err) throw err;
+                con.query("SELECT * FROM funciones WHERE CURDATE() < fecha and butacas_disponibles not LIKE '[]' and fecha > NOW() and tipo='porcel';",function(err,results,fields){
+                    
+                    if (err) throw err;
+                    if(results==''){
+                        res.json("no hay funciones disponibles");
+                    }
+                    console.log(`Funciones obtenidas`);
+                    res.json(results);    
+                });
+            });
+        });
+    });
+    app.get('/funcionesbanieros',(req, res) => {
+        pool.getConnection(function(err, con:any){
+            con.beginTransaction(function(err){
+                if(err) throw err;
+                con.query("SELECT * FROM funciones WHERE CURDATE() < fecha and butacas_disponibles not LIKE '[]' and fecha > NOW() and tipo='banieros';",function(err,results,fields){
+                    
+                    if (err) throw err;
+                    if(results==''){
+                        res.json("no hay funciones disponibles");
+                    }
+                    console.log(`Funciones obtenidas`);
+                    res.json(results);    
+                });
+            });
+        });
+    });
+    app.get('/ingresar/:username',(req,res)=>{
+        var username:String=req.params.username;
+        pool.getConnection(function(err, con:any){
+            con.beginTransaction(function(err){
+                if(err) throw err;
+                con.query("SELECT * FROM usuarios WHERE username = ?;",[username],function(err,results,fields){
+                    
+                    if (err) throw err;
+                    if(results==''){
+                        res.json("No hay usuarios registrados con ese username");
+                    }
+                    else{
+                        console.log(`Usuario obtenido`);
+                        res.json(results); 
+                    }
+                       
+                });
+            });
+        });
+    });
+    app.get('/reservas/:id_usuario',(req,res)=>{
+        var id_usuario:String=req.params.id_usuario;
+        pool.getConnection(function(err, con:any){
+            con.beginTransaction(function(err){
+                if(err) throw err;
+                con.query("SELECT * FROM reservas WHERE usuario = ?;",[id_usuario],function(err,results,fields){
+                    
+                    if (err) throw err;
+                    if(results==''){
+                        res.json("No hay reservas generadas por este usuario");
+                    }
+                    console.log(`Reservas obtenidas`);
+                    res.json(results);    
+                });
+            });
+        });
+    });
     //para reservar
-    app.post('/reservar/:id_funcion', (req: express.Request, res: express.Response) => {
+    app.post('/reservar/:id_funcion', (req, res) => {
         console.log("ee");
         var id_funcion:number = req.params.id_funcion
         var id_usuario:number = req.body.id_usuario
@@ -211,7 +297,7 @@ else{
         }
     });
     //para cancelar la reserva
-    app.post('/cancelar_reserva', (req: express.Request, res: express.Response) => {
+    app.post('/cancelar_reserva', (req, res) => {
         const worker = cluster.fork();
         var id_funcion:number = req.params.id_funcion
         var id_usuario:number = req.body.id_usuario;
@@ -239,10 +325,10 @@ else{
         });
     });
 
-    var CronJob = require('cron').CronJob;
-    //cuando la película está a cinco minutos de iniciar se pasa su estado a no vigente
-    var job = new CronJob('*/5 * * * *', function() {
-        pool.getConnection(function(err, con){
+    //var CronJob = require('cron').CronJob;
+    
+    //var job = new CronJob('*/5 * * * *', function() {
+        /*pool.getConnection(function(err, con){
             con.beginTransaction(function(err){
                 if(err) throw err;
                 con.query("update funciones set vigente=0 where vigente = 1 and fecha between NOW() and DATE_ADD(NOW(), INTERVAL 5 MINUTE);",function(err,results,fields){
@@ -253,7 +339,7 @@ else{
             });
         });
     }, null, true, 'America/Los_Angeles');
-    job.start();
+    job.start();*/
 
     server.listen(port);
     
